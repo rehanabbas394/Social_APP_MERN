@@ -43,16 +43,17 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+//get a user by id
 router.get("/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
 
-    // Check if user exists
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const { password, updatedAt, ...other } = user.toObject();
+    const userObject = user.toObject();
+    const { password, updatedAt, ...other } = userObject;
 
     res.status(200).json(other);
   } catch (err) {
@@ -60,34 +61,52 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-//get friends
-router.get("/friends/:userId", async (req, res) => {
+// get user by username
+router.get("/", async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId);
+    const { username } = req.query;
+    
+    if (!username) {
+      return res.status(400).json({ message: "Username is required" });
+    }
 
+    // Explicitly search by username to avoid MongoDB treating it as an _id
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Fetch all friends in parallel
-    const friends = await Promise.all(
-      user.followings.map(async (friendId) => await User.findById(friendId))
-    );
+    const userObject = user.toObject();
+    const { password, updatedAt, ...other } = userObject;
 
-    // Extract necessary fields
-    const friendList = friends
-      .filter(friend => friend !== null) 
-      .map(({ _id, username, profilePicture }) => ({
-        _id,
-        username,
-        profilePicture
-      }));
-
-    res.status(200).json(friendList);
+    res.status(200).json(other);
   } catch (err) {
+    console.error("Error fetching user:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+});
+
+// get friends of a user
+router.get("/friends/:userId", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Ensure followings is an array
+    const followings = user.followings || [];
+
+    // Use a single MongoDB query instead of multiple findById calls
+    const friends = await User.find({ _id: { $in: followings } }, "_id username profilePicture");
+
+    res.status(200).json(friends); // Directly return the array of friends
+  } catch (err) {
+    console.error("Error fetching friends:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 
 //follow a user

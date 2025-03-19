@@ -1,11 +1,13 @@
 import "./closeFriend.css";
 
-export default function CloseFriend({ user}) {
+const Public_folder = import.meta.env.VITE_PUBLIC_FOLDER;
+
+export default function CloseFriend({ user }) {
   return (
     <div>
       <li className="sidebarFriend">
         <img
-          src={user.profilePicture}
+          src={Public_folder+user.profilePicture}
           alt=""
           className="sidebarFriendImg"
         />

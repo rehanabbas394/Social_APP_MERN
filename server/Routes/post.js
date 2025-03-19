@@ -99,9 +99,9 @@ router.get("/:id", async (req, res) => {
 });
 
 // Get timeline posts
-router.get("/timeline/all", async (req, res) => {
+router.get("/timeline/:userId", async (req, res) => {
   try {
-    const userId = req.query.userId;
+    const userId = req.params.userId;
 
     if (!userId) {
       return res.status(400).json({ message: "userId is required" });
