@@ -3,8 +3,23 @@ import Sidebar from "../../comonents/sidebar/sidebar";
 import Rightbar from "../../comonents/rightbar/rightbar";
 import Topbar from "../../comonents/topbar/topbar";
 import "./profile.css";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { useParams } from "react-router";
+
+const Public_folder = import.meta.env.VITE_PUBLIC_FOLDER || "/assets/";
 
 export default function Profile() {
+  const [user, setUser] = useState({});
+  const username = useParams().username;
+
+  useEffect (()=>{
+    const fetchUser = async () => {
+      const res = await axios.get(`http://localhost:4000/api/user?username=${username}`);
+      setUser(res.data);
+    }
+    fetchUser();
+  },[username]);
   return (
     <>
       <Topbar />
@@ -15,23 +30,23 @@ export default function Profile() {
             <div className="ProfileCover">
               <img
                 className="ProfileCoverImg"
-                src="src/assets/post/3.jpeg"
-                alt=""
+                src={user.coverPicture || `${Public_folder}post/3.jpeg`}
+                alt="Cover"
               />
               <img
                 className="ProfileUserImg"
-                src="src/assets/person/6.jpeg"
-                alt=""
+                src={user.coverPicture || `${Public_folder}person/noAvatar.png`}
+                alt="Profile"
               />
             </div>
             <div className="ProfileInfo">
-              <h4 className="ProfileInfoName">Rehan Abbas</h4>
+              <h4 className="ProfileInfoName">{user.username}</h4>
               <span className="ProfileInfoDesc">Allah is best planner!</span>
-              </div>
+            </div>
           </div>
           <div className="ProfileRightBottom">
-            <Feed />
-            <Rightbar profile />
+            <Feed username={username} />
+            <Rightbar user={user} />
           </div>
         </div>
       </div>

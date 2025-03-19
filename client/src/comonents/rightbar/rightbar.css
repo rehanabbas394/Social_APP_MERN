@@ -83,3 +83,14 @@
   font-weight: 500;
   margin-top: 10px;
 }
+
+.rightbarFollowButton {
+  width: 100px;
+  border: none;
+  padding: 5px;
+  border-radius: 10px;
+  background-color: #1877f2;
+  color: white;
+  font-weight: 500;
+  cursor: pointer;
+}

@@ -8,6 +8,8 @@ const authroutes = require("./Routes/auth");
 const userroutes = require("./Routes/users");
 const postroutes = require("./Routes/post");
 const multer = require("multer");
+const cors = require("cors");
+const fs = require("fs");
 const dotenv = require("dotenv");
 dotenv.config();
 
@@ -31,27 +33,65 @@ connectDB();
 app.use(express.json()); 
 app.use(helmet());
 app.use(morgan("common"));
-app.use("/images", express.static(path.join(__dirname, "public/images")));
+app.use("/images", (req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+}, express.static(path.join(__dirname, "public/images")));
+
+
+app.use(cors({
+  origin: "http://localhost:5173", // Allow frontend URL
+  methods: "GET, POST, PUT, DELETE, OPTIONS",
+  allowedHeaders: "Origin, X-Requested-With, Content-Type, Accept, Authorization",
+  credentials: true
+}));
+
+// Handle preflight requests
+app.options("*", cors());
+
+// Define upload path
+const uploads = path.join(__dirname, "public/images");
+
+// Ensure upload directory exists
+if (!fs.existsSync(uploads)) {
+  fs.mkdirSync(uploads, { recursive: true });
+}
 
 // File upload setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "public/images");
+    cb(null, uploads);
   },
   filename: (req, file, cb) => {
-    cb(null, req.body.name);
+    if (!file) {
+      return cb(new Error("File is missing"), null);
+    }
+
+    // Ensure req.body.name is valid
+    const filename = req.body.name || `${Date.now()}_${file.originalname}`;
+    cb(null, filename);
   },
 });
 
-const upload = multer({ storage: storage });
+// Initialize multer
+const upload = multer({ storage });
+
+// API route for file upload
 app.post("/api/upload", upload.single("file"), (req, res) => {
   try {
-    return res.status(200).json("File uploaded successfully");
+    if (!req.file) {
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+    res.status(200).json({ message: "File uploaded successfully", file: req.file.filename });
   } catch (error) {
     console.error(error);
-    res.status(500).json("File upload failed");
+    res.status(500).json({ message: "File upload failed", error });
   }
 });
+
 
 app.use("/api/auth", authroutes);
 app.use("/api/user", userroutes);
